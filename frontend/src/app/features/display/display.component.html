@@ -1,0 +1,23 @@
+<div class="display">
+  <!-- Timer -->
+  <div class="display__timer">
+    <app-timer-display
+      [remainingMs]="remainingMs"
+      [state]="state"
+      [goldenScore]="goldenScore"
+      [osaekomiMs]="osaekomiMs"
+    />
+  </div>
+
+  <!-- Scores -->
+  <div class="display__scores">
+    <app-score-board [score]="scoreA" [label]="labelA" />
+    <div class="display__vs">VS</div>
+    <app-score-board [score]="scoreB" [label]="labelB" />
+  </div>
+
+  <!-- Finish banner -->
+  @if (finishMessage) {
+    <div class="display__finish">{{ finishMessage }}</div>
+  }
+</div>
