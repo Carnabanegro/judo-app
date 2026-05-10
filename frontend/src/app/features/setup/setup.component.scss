@@ -1,0 +1,268 @@
+:host {
+  display: block;
+  font-family: system-ui, sans-serif;
+  color: #1a1a2e;
+  background: #f4f6fb;
+  min-height: 100vh;
+}
+
+.setup {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.5rem;
+
+  &__header {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 0.75rem;
+    }
+  }
+
+  &__steps {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__error {
+    background: #fee;
+    border: 1px solid #f99;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: #900;
+  }
+
+  &__loading {
+    text-align: center;
+    padding: 1rem;
+    color: #666;
+    font-style: italic;
+  }
+
+  &__section {
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 1rem;
+    }
+  }
+
+  &__actions {
+    margin-top: 1.5rem;
+  }
+}
+
+// Stepper nav
+.step-btn {
+  padding: 0.4rem 0.9rem;
+  border: 2px solid #ccd;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.15s;
+
+  &.active {
+    background: #1a1a2e;
+    color: white;
+    border-color: #1a1a2e;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// Card list
+.card-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border: 2px solid #e0e4f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.15s;
+
+  &.selected {
+    border-color: #1a1a2e;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      font-weight: 600;
+    }
+
+    span {
+      font-size: 0.82rem;
+      color: #666;
+    }
+  }
+}
+
+// Form panel (details/summary)
+.form-panel {
+  background: white;
+  border: 1px solid #e0e4f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #1a1a2e;
+    padding: 0.25rem 0;
+  }
+}
+
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+
+  button[type='submit'] {
+    grid-column: 1 / -1;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
+
+  input,
+  select {
+    padding: 0.45rem 0.6rem;
+    border: 1px solid #ccd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: 2px solid #1a1a2e;
+      outline-offset: 1px;
+    }
+  }
+}
+
+// Buttons
+.btn {
+  padding: 0.5rem 1.1rem;
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &--sm {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.8rem;
+  }
+
+  &--primary {
+    background: #e63946;
+  }
+}
+
+// Bracket
+.bracket-round {
+  margin-bottom: 1.5rem;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: #444;
+  }
+}
+
+.match-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.match-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  border: 1px solid #e0e4f0;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+
+  &__athlete {
+    flex: 1;
+    font-weight: 500;
+
+    &:last-of-type {
+      text-align: right;
+    }
+  }
+
+  &__vs {
+    color: #999;
+    font-size: 0.75rem;
+  }
+
+  &__status {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    background: #e0e4f0;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  &.status-in_progress {
+    border-color: #f4a261;
+    background: #fff8f0;
+  }
+
+  &.status-finished {
+    border-color: #2d6a4f;
+    background: #f0faf5;
+  }
+}
+
+.empty {
+  color: #888;
+  font-style: italic;
+  margin: 0.5rem 0;
+}
