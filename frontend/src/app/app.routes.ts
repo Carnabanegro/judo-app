@@ -1,7 +1,12 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'operator', pathMatch: 'full' },
+  { path: '', redirectTo: 'setup', pathMatch: 'full' },
+  {
+    path: 'setup',
+    loadComponent: () =>
+      import('./features/setup/setup.component').then(m => m.SetupComponent)
+  },
   {
     path: 'operator',
     loadComponent: () =>
@@ -12,5 +17,5 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/display/display.component').then(m => m.DisplayComponent)
   },
-  { path: '**', redirectTo: 'operator' }
+  { path: '**', redirectTo: 'setup' }
 ];
