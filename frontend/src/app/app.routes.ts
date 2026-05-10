@@ -8,6 +8,11 @@ export const routes: Routes = [
       import('./features/setup/setup.component').then(m => m.SetupComponent)
   },
   {
+    path: 'tatami',
+    loadComponent: () =>
+      import('./features/tatami/tatami.component').then(m => m.TatamiComponent)
+  },
+  {
     path: 'operator',
     loadComponent: () =>
       import('./features/operator/operator.component').then(m => m.OperatorComponent)
