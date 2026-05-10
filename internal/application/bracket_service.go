@@ -10,24 +10,27 @@ import (
 
 // BracketService handles bracket generation and match advancement.
 type BracketService struct {
-	brackets   ports.BracketRepo
-	matches    ports.MatchRepo
-	athletes   ports.AthleteRepo
-	categories ports.CategoryRepo
+	brackets    ports.BracketRepo
+	matches     ports.MatchRepo
+	matchStatus ports.MatchStatusRepo
+	athletes    ports.AthleteRepo
+	categories  ports.CategoryRepo
 }
 
 // NewBracketService creates a new BracketService.
 func NewBracketService(
 	brackets ports.BracketRepo,
 	matches ports.MatchRepo,
+	matchStatus ports.MatchStatusRepo,
 	athletes ports.AthleteRepo,
 	categories ports.CategoryRepo,
 ) *BracketService {
 	return &BracketService{
-		brackets:   brackets,
-		matches:    matches,
-		athletes:   athletes,
-		categories: categories,
+		brackets:    brackets,
+		matches:     matches,
+		matchStatus: matchStatus,
+		athletes:    athletes,
+		categories:  categories,
 	}
 }
 
@@ -45,6 +48,10 @@ func (s *BracketService) GenerateBracket(ctx context.Context, categoryID domain.
 		return nil, err
 	}
 	if err := s.brackets.Save(ctx, b); err != nil {
+		return nil, err
+	}
+	// Sync mutable match state to the matches table for tatami queries.
+	if err := s.matchStatus.UpsertFromBracket(ctx, b); err != nil {
 		return nil, err
 	}
 	return b, nil

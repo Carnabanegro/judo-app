@@ -64,6 +64,27 @@ func migrate(db *sql.DB) error {
 			category_id TEXT PRIMARY KEY REFERENCES categories(id) ON DELETE CASCADE,
 			data        TEXT NOT NULL  -- JSON blob of the full Bracket struct
 		);
+
+		-- matches: mutable match state extracted for efficient querying.
+		-- The bracket JSON still stores structure; this table owns status/tatami.
+		CREATE TABLE IF NOT EXISTS matches (
+			id           TEXT PRIMARY KEY,
+			category_id  TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+			round        INTEGER NOT NULL,
+			position     INTEGER NOT NULL,
+			is_repechage INTEGER NOT NULL DEFAULT 0,
+			athlete_a_id TEXT,
+			athlete_b_id TEXT,
+			status       TEXT NOT NULL DEFAULT 'PENDING',
+			tatami_id    TEXT NOT NULL DEFAULT '',
+			result_json  TEXT
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_matches_category ON matches(category_id);
+		CREATE INDEX IF NOT EXISTS idx_matches_status   ON matches(status);
+		CREATE INDEX IF NOT EXISTS idx_divisions_tournament ON divisions(tournament_id);
+		CREATE INDEX IF NOT EXISTS idx_categories_division  ON categories(division_id);
+		CREATE INDEX IF NOT EXISTS idx_athletes_category    ON athletes(category_id);
 	`)
 	return err
 }
