@@ -32,6 +32,7 @@ type CategoryRepo interface {
 // AthleteRepo defines persistence operations for athletes.
 type AthleteRepo interface {
 	Save(ctx context.Context, a *domain.Athlete) error
+	SaveToCategory(ctx context.Context, a *domain.Athlete, categoryID domain.CategoryID) error
 	FindByID(ctx context.Context, id domain.AthleteID) (*domain.Athlete, error)
 	ListByCategory(ctx context.Context, categoryID domain.CategoryID) ([]*domain.Athlete, error)
 	Delete(ctx context.Context, id domain.AthleteID) error

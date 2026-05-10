@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"judo-app/internal/application"
 	"judo-app/internal/application/ports"
@@ -24,6 +25,7 @@ type App struct {
 	brackets    *application.BracketService
 	combat      *application.CombatService
 	practice    *application.PracticeService
+	tatami      *application.TatamiService
 }
 
 // Ensure display.Server satisfies the broadcaster port at compile time.
@@ -38,7 +40,6 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	// Infrastructure — SQLite
 	db, err := infrasqlite.Open(dbPath)
 	if err != nil {
 		fmt.Println("ERROR: could not open database:", err)
@@ -51,24 +52,207 @@ func (a *App) startup(ctx context.Context) {
 	athleteRepo := infrasqlite.NewAthleteRepo(db)
 	bracketRepo := infrasqlite.NewBracketRepo(db)
 	matchRepo := infrasqlite.NewMatchRepo(bracketRepo)
+	matchStatusRepo := infrasqlite.NewMatchStatusRepo(db)
 
-	// Infrastructure — Display WebSocket server (localhost:8080/ws)
 	displayServer := display.NewServer(displayAddr)
 	displayServer.Start(ctx)
 
-	// Application layer
 	a.tournaments = application.NewTournamentService(tournamentRepo, divisionRepo, categoryRepo, athleteRepo)
-	a.brackets = application.NewBracketService(bracketRepo, matchRepo, athleteRepo, categoryRepo)
+	a.brackets = application.NewBracketService(bracketRepo, matchRepo, matchStatusRepo, athleteRepo, categoryRepo)
 	a.combat = application.NewCombatService(displayServer)
 	a.practice = application.NewPracticeService(a.combat)
+	a.tatami = application.NewTatamiService(matchStatusRepo, a.brackets, a.combat, displayServer)
 }
 
-// shutdown is called by the Wails runtime when the window closes.
 func (a *App) shutdown(_ context.Context) {}
 
-// ── Combat bindings ───────────────────────────────────────────────────────────
+// ── Tournament setup bindings ─────────────────────────────────────────────────
 
-// StartMatch begins an existing bracket match identified by its UUID string.
+// CreateTournament creates a new tournament.
+func (a *App) CreateTournament(name, location, dateISO string) (*TournamentDTO, error) {
+	date, err := time.Parse(time.DateOnly, dateISO)
+	if err != nil {
+		return nil, fmt.Errorf("invalid date %q: use YYYY-MM-DD", dateISO)
+	}
+	t, err := a.tournaments.CreateTournament(a.ctx, name, location, date)
+	if err != nil {
+		return nil, err
+	}
+	return tournamentToDTO(t), nil
+}
+
+// ListTournaments returns all tournaments.
+func (a *App) ListTournaments() ([]*TournamentDTO, error) {
+	list, err := a.tournaments.ListTournaments(a.ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*TournamentDTO, len(list))
+	for i, t := range list {
+		out[i] = tournamentToDTO(t)
+	}
+	return out, nil
+}
+
+// CreateDivision creates a division inside a tournament.
+func (a *App) CreateDivision(tournamentID, ageGroup, gender, weightClass, format string) (*DivisionDTO, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid tournamentID: %w", err)
+	}
+	d, err := a.tournaments.CreateDivision(a.ctx, tID,
+		domain_AgeGroup(ageGroup), domain_Gender(gender), weightClass, domain_Format(format))
+	if err != nil {
+		return nil, err
+	}
+	return divisionToDTO(d), nil
+}
+
+// ListDivisions returns all divisions for a tournament.
+func (a *App) ListDivisions(tournamentID string) ([]*DivisionDTO, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid tournamentID: %w", err)
+	}
+	list, err := a.tournaments.ListDivisions(a.ctx, tID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*DivisionDTO, len(list))
+	for i, d := range list {
+		out[i] = divisionToDTO(d)
+	}
+	return out, nil
+}
+
+// RegisterAthlete registers an athlete to a division (category auto-created per division for V1).
+func (a *App) RegisterAthlete(divisionID, name, club string, weight float64, birthDateISO string) (*AthleteDTO, error) {
+	dID, err := uuid.Parse(divisionID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid divisionID: %w", err)
+	}
+	birth, err := time.Parse(time.DateOnly, birthDateISO)
+	if err != nil {
+		return nil, fmt.Errorf("invalid birthDate %q: use YYYY-MM-DD", birthDateISO)
+	}
+	// Ensure the division has a category.
+	cats, err := a.tournaments.ListCategories(a.ctx, dID)
+	if err != nil {
+		return nil, err
+	}
+	var catID uuid.UUID
+	if len(cats) == 0 {
+		cat, err := a.tournaments.CreateCategory(a.ctx, dID)
+		if err != nil {
+			return nil, err
+		}
+		catID = cat.ID
+	} else {
+		catID = cats[0].ID
+	}
+	athlete, err := a.tournaments.RegisterAthlete(a.ctx, catID, name, club, weight, birth)
+	if err != nil {
+		return nil, err
+	}
+	return athleteToDTO(athlete, catID.String()), nil
+}
+
+// ListAthletes returns all athletes for a division.
+func (a *App) ListAthletes(divisionID string) ([]*AthleteDTO, error) {
+	dID, err := uuid.Parse(divisionID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid divisionID: %w", err)
+	}
+	cats, err := a.tournaments.ListCategories(a.ctx, dID)
+	if err != nil {
+		return nil, err
+	}
+	if len(cats) == 0 {
+		return []*AthleteDTO{}, nil
+	}
+	list, err := a.tournaments.ListAthletes(a.ctx, cats[0].ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*AthleteDTO, len(list))
+	for i, ath := range list {
+		out[i] = athleteToDTO(ath, cats[0].ID.String())
+	}
+	return out, nil
+}
+
+// GenerateBracket generates the bracket for a division.
+func (a *App) GenerateBracket(divisionID string) error {
+	dID, err := uuid.Parse(divisionID)
+	if err != nil {
+		return fmt.Errorf("invalid divisionID: %w", err)
+	}
+	cats, err := a.tournaments.ListCategories(a.ctx, dID)
+	if err != nil {
+		return err
+	}
+	if len(cats) == 0 {
+		return fmt.Errorf("no category found for division %s", divisionID)
+	}
+	_, err = a.brackets.GenerateBracket(a.ctx, cats[0].ID)
+	return err
+}
+
+// GetBracket returns the bracket for a division.
+func (a *App) GetBracket(divisionID string) (*BracketDTO, error) {
+	dID, err := uuid.Parse(divisionID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid divisionID: %w", err)
+	}
+	cats, err := a.tournaments.ListCategories(a.ctx, dID)
+	if err != nil {
+		return nil, err
+	}
+	if len(cats) == 0 {
+		return nil, fmt.Errorf("no category found for division %s", divisionID)
+	}
+	b, err := a.brackets.GetBracket(a.ctx, cats[0].ID)
+	if err != nil {
+		return nil, err
+	}
+	return bracketToDTO(b), nil
+}
+
+// ── Tatami bindings ───────────────────────────────────────────────────────────
+
+// ListMatches returns all matches for a tournament with live status/tatami info.
+func (a *App) ListMatches(tournamentID string) ([]ports.MatchRow, error) {
+	tID, err := uuid.Parse(tournamentID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid tournamentID: %w", err)
+	}
+	return a.tatami.ListMatches(a.ctx, tID)
+}
+
+// ClaimMatch atomically claims a PENDING match for a tatami and starts the combat.
+func (a *App) ClaimMatch(matchID, tatamiID, labelA, labelB string) error {
+	mID, err := uuid.Parse(matchID)
+	if err != nil {
+		return fmt.Errorf("invalid matchID: %w", err)
+	}
+	return a.tatami.ClaimMatch(a.ctx, mID, tatamiID, labelA, labelB)
+}
+
+// RecordMatchResult records the result of a match and advances the bracket.
+func (a *App) RecordMatchResult(categoryID, matchID string, winnerIdx int, method string) error {
+	cID, err := uuid.Parse(categoryID)
+	if err != nil {
+		return fmt.Errorf("invalid categoryID: %w", err)
+	}
+	mID, err := uuid.Parse(matchID)
+	if err != nil {
+		return fmt.Errorf("invalid matchID: %w", err)
+	}
+	return a.tatami.RecordResult(a.ctx, cID, mID, winnerIdx, domain_FinishMethod(method))
+}
+
+// ── Combat bindings (unchanged) ───────────────────────────────────────────────
+
 func (a *App) StartMatch(matchID, labelA, labelB string) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -77,7 +261,6 @@ func (a *App) StartMatch(matchID, labelA, labelB string) error {
 	return a.combat.StartMatchByID(a.ctx, id, labelA, labelB)
 }
 
-// Pause pauses the active combat timer.
 func (a *App) Pause(matchID string) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -86,7 +269,6 @@ func (a *App) Pause(matchID string) error {
 	return a.combat.Pause(id)
 }
 
-// Resume resumes a paused combat.
 func (a *App) Resume(matchID string) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -95,7 +277,6 @@ func (a *App) Resume(matchID string) error {
 	return a.combat.Resume(id)
 }
 
-// Ippon records an ippon for the given athlete (0=A, 1=B).
 func (a *App) Ippon(matchID string, athleteIdx int) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -104,7 +285,6 @@ func (a *App) Ippon(matchID string, athleteIdx int) error {
 	return a.combat.Ippon(id, athleteIdx)
 }
 
-// WazaAri records a waza-ari.
 func (a *App) WazaAri(matchID string, athleteIdx int) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -113,7 +293,6 @@ func (a *App) WazaAri(matchID string, athleteIdx int) error {
 	return a.combat.WazaAri(id, athleteIdx)
 }
 
-// Yuko records a yuko.
 func (a *App) Yuko(matchID string, athleteIdx int) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -122,7 +301,6 @@ func (a *App) Yuko(matchID string, athleteIdx int) error {
 	return a.combat.Yuko(id, athleteIdx)
 }
 
-// Shido records a shido (penalty).
 func (a *App) Shido(matchID string, athleteIdx int) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -131,7 +309,6 @@ func (a *App) Shido(matchID string, athleteIdx int) error {
 	return a.combat.Shido(id, athleteIdx)
 }
 
-// StartOsaekomi begins the osaekomi (hold-down) clock.
 func (a *App) StartOsaekomi(matchID string) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -140,7 +317,6 @@ func (a *App) StartOsaekomi(matchID string) error {
 	return a.combat.StartOsaekomi(id)
 }
 
-// StopOsaekomi ends the osaekomi and returns the score applied ("IPPON", "WAZA_ARI", "YUKO", "").
 func (a *App) StopOsaekomi(matchID string, athleteIdx int) (string, error) {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -149,7 +325,6 @@ func (a *App) StopOsaekomi(matchID string, athleteIdx int) (string, error) {
 	return a.combat.StopOsaekomi(id, athleteIdx)
 }
 
-// Finish forcefully ends a combat (kiken-gachi / fusen-gachi).
 func (a *App) Finish(matchID string) error {
 	id, err := uuid.Parse(matchID)
 	if err != nil {
@@ -158,9 +333,6 @@ func (a *App) Finish(matchID string) error {
 	return a.combat.Finish(id)
 }
 
-// ── Practice bindings ─────────────────────────────────────────────────────────
-
-// StartPractice begins a standalone practice match. Returns the match UUID string.
 func (a *App) StartPractice(labelA, labelB string) (string, error) {
 	pm, err := a.practice.StartPractice(a.ctx, labelA, labelB)
 	if err != nil {

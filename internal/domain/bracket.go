@@ -18,6 +18,15 @@ type MatchResult struct {
 	Method   FinishMethod
 }
 
+// MatchStatus represents the lifecycle state of a match.
+type MatchStatus string
+
+const (
+	MatchPending    MatchStatus = "PENDING"
+	MatchInProgress MatchStatus = "IN_PROGRESS"
+	MatchFinished   MatchStatus = "FINISHED"
+)
+
 // FinishMethod describes how a match ended.
 type FinishMethod string
 
@@ -32,16 +41,18 @@ const (
 
 // Match represents a single bout between two athletes.
 type Match struct {
-	ID          MatchID
-	CategoryID  CategoryID
-	Round       int
-	Position    int
-	AthleteA    *Athlete
-	AthleteB    *Athlete
-	Result      *MatchResult
-	NextMatchID *MatchID
-	IsRepechage bool
+	ID           MatchID
+	CategoryID   CategoryID
+	Round        int
+	Position     int
+	AthleteA     *Athlete
+	AthleteB     *Athlete
+	Result       *MatchResult
+	NextMatchID  *MatchID
+	IsRepechage  bool
 	RepechagePool int
+	Status       MatchStatus // PENDING | IN_PROGRESS | FINISHED
+	TatamiID     string      // "" = unclaimed
 }
 
 // Bracket holds the full direct-elimination + repechage structure for a category.
@@ -97,6 +108,7 @@ func GenerateBracket(categoryID CategoryID, athletes []*Athlete) (*Bracket, erro
 				Position:   i / 2,
 				AthleteA:   currentSlots[i],
 				AthleteB:   currentSlots[i+1],
+				Status:     MatchPending,
 			}
 			// Advance byes immediately.
 			if m.AthleteA == nil || m.AthleteB == nil {
@@ -282,7 +294,8 @@ func NewRepechageBronzeMatch(categoryID CategoryID, poolIdx int, athleteA, athle
 		RepechagePool: poolIdx,
 		AthleteA:      athleteA,
 		AthleteB:      athleteB,
-		Round:         0, // bronze is outside main round numbering
+		Round:         0,
+		Status:        MatchPending,
 	}
 }
 

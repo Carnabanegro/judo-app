@@ -89,13 +89,18 @@ func (s *TournamentService) CreateCategory(ctx context.Context, divisionID domai
 	return cat, nil
 }
 
+// ListCategories returns all categories for a division.
+func (s *TournamentService) ListCategories(ctx context.Context, divisionID domain.DivisionID) ([]*domain.Category, error) {
+	return s.categories.ListByDivision(ctx, divisionID)
+}
+
 // RegisterAthlete registers an athlete to a category.
 func (s *TournamentService) RegisterAthlete(ctx context.Context, categoryID domain.CategoryID, name, club string, weight float64, birthDate time.Time) (*domain.Athlete, error) {
 	a, err := domain.NewAthlete(name, club, weight, birthDate)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.athletes.Save(ctx, a); err != nil {
+	if err := s.athletes.SaveToCategory(ctx, a, categoryID); err != nil {
 		return nil, err
 	}
 	return a, nil
