@@ -1,0 +1,203 @@
+:host {
+  display: block;
+  font-family: system-ui, sans-serif;
+  color: #1a1a2e;
+  background: #f4f6fb;
+  min-height: 100vh;
+}
+
+.tatami {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+    }
+  }
+
+  &__badge {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #1a1a2e;
+    color: white;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.88rem;
+  }
+
+  &__error {
+    background: #fee;
+    border: 1px solid #f99;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: #900;
+  }
+
+  &__section {
+    margin-bottom: 1.5rem;
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem;
+      color: #333;
+    }
+  }
+}
+
+.card-panel {
+  background: white;
+  border: 1px solid #e0e4f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+
+  button[type='submit'] {
+    grid-column: 1 / -1;
+  }
+}
+
+.result-form {
+  margin-top: 1rem;
+  background: #f8f9ff;
+  border: 1px dashed #c0c8e0;
+  border-radius: 8px;
+  padding: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
+
+  input, select {
+    padding: 0.45rem 0.6rem;
+    border: 1px solid #ccd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: 2px solid #1a1a2e;
+      outline-offset: 1px;
+    }
+  }
+}
+
+// Buttons
+.btn {
+  padding: 0.5rem 1.1rem;
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &--sm {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.8rem;
+  }
+
+  &--primary {
+    background: #e63946;
+  }
+
+  &--ghost {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.5);
+    font-size: 0.78rem;
+    padding: 0.2rem 0.6rem;
+  }
+}
+
+// Match lists
+.match-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.match-card {
+  background: white;
+  border: 2px solid #e0e4f0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  &--active {
+    border-color: #f4a261;
+    background: #fff8f0;
+  }
+
+  &--done {
+    border-color: #2d6a4f;
+    background: #f0faf5;
+    opacity: 0.75;
+  }
+
+  &__fighters {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  &__meta {
+    font-size: 0.78rem;
+    color: #777;
+  }
+}
+
+.fighter {
+  flex: 1;
+
+  &--a { color: #1a1a2e; }
+  &--b { color: #e63946; text-align: right; }
+}
+
+.vs {
+  color: #bbb;
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.empty {
+  color: #888;
+  font-style: italic;
+}

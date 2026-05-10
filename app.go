@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"time"
 
 	"judo-app/internal/application"
@@ -20,6 +21,7 @@ const dbPath = "judo.db"
 // callable from the Angular frontend via window.go.main.App.*
 type App struct {
 	ctx context.Context
+	spa fs.FS // embedded Angular SPA for the display server
 
 	tournaments *application.TournamentService
 	brackets    *application.BracketService
@@ -32,8 +34,8 @@ type App struct {
 var _ ports.EventBroadcaster = (*display.Server)(nil)
 
 // NewApp creates a new App application struct.
-func NewApp() *App {
-	return &App{}
+func NewApp(spa fs.FS) *App {
+	return &App{spa: spa}
 }
 
 // startup is called by the Wails runtime after the window is ready.
@@ -55,13 +57,18 @@ func (a *App) startup(ctx context.Context) {
 	matchStatusRepo := infrasqlite.NewMatchStatusRepo(db)
 
 	displayServer := display.NewServer(displayAddr)
-	displayServer.Start(ctx)
 
 	a.tournaments = application.NewTournamentService(tournamentRepo, divisionRepo, categoryRepo, athleteRepo)
 	a.brackets = application.NewBracketService(bracketRepo, matchRepo, matchStatusRepo, athleteRepo, categoryRepo)
 	a.combat = application.NewCombatService(displayServer)
 	a.practice = application.NewPracticeService(a.combat)
 	a.tatami = application.NewTatamiService(matchStatusRepo, a.brackets, a.combat, displayServer)
+
+	displayServer.SetTatamiService(a.tatami)
+	if a.spa != nil {
+		displayServer.SetSPA(a.spa)
+	}
+	displayServer.Start(ctx)
 }
 
 func (a *App) shutdown(_ context.Context) {}
