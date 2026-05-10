@@ -34,6 +34,13 @@ func NewCombatService(broadcaster ports.EventBroadcaster) *CombatService {
 	}
 }
 
+// StartMatchByID begins a new match given its UUID and athlete labels.
+// Use this when the caller already knows the match ID (e.g. from app.go bindings).
+func (s *CombatService) StartMatchByID(ctx context.Context, id domain.MatchID, labelA, labelB string) error {
+	syntheticMatch := &domain.Match{ID: id}
+	return s.StartMatch(ctx, syntheticMatch, labelA, labelB)
+}
+
 // StartMatch begins a new match from an existing bracket match.
 func (s *CombatService) StartMatch(ctx context.Context, match *domain.Match, labelA, labelB string) error {
 	s.mu.Lock()
