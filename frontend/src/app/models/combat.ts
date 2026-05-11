@@ -36,7 +36,11 @@ export type CombatState =
   | 'GOLDEN_SCORE'
   | 'FINISHED';
 
+export interface BracketUpdatePayload {
+  tournamentId: string;
+}
+
 export interface DisplayEvent<T = unknown> {
-  type: 'combat:update' | 'combat:tick' | 'combat:finished';
+  type: 'combat:update' | 'combat:tick' | 'combat:finished' | 'bracket:update';
   payload: T;
 }

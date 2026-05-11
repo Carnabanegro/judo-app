@@ -39,6 +39,7 @@ declare global {
           ListMatches(tournamentId: string): Promise<MatchRow[]>;
           ClaimMatch(matchId: string, tatamiId: string, labelA: string, labelB: string): Promise<void>;
           RecordMatchResult(categoryId: string, matchId: string, winnerIdx: number, method: string): Promise<void>;
+          SetActiveTournament(id: string): Promise<void>;
         };
       };
     };
