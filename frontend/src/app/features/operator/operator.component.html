@@ -1,0 +1,89 @@
+<div class="operator">
+  <header class="operator__header">
+    <h1>Mesa de Control</h1>
+  </header>
+
+  @if (!matchStarted) {
+    <section class="operator__setup">
+      <div class="setup-form">
+        <label class="setup-form__label">
+          <span>Modo práctica</span>
+          <input type="checkbox" [(ngModel)]="practiceMode" />
+        </label>
+
+        @if (!practiceMode) {
+          <label class="setup-form__label">
+            <span>Match ID</span>
+            <input class="setup-form__input" [(ngModel)]="matchId" placeholder="uuid del match" />
+          </label>
+        }
+
+        <label class="setup-form__label">
+          <span>Atleta A</span>
+          <input class="setup-form__input" [(ngModel)]="labelA" />
+        </label>
+        <label class="setup-form__label">
+          <span>Atleta B</span>
+          <input class="setup-form__input" [(ngModel)]="labelB" />
+        </label>
+
+        <button class="btn btn--primary" (click)="startMatch()">Iniciar combate</button>
+      </div>
+
+      @if (finishMessage) {
+        <div class="result-banner">{{ finishMessage }}</div>
+      }
+    </section>
+  }
+
+  @if (matchStarted) {
+    <section class="operator__combat">
+      <!-- Timer -->
+      <div class="combat__timer">
+        <app-timer-display
+          [remainingMs]="remainingMs"
+          [state]="state"
+          [goldenScore]="goldenScore"
+          [osaekomiMs]="osaekomiMs"
+        />
+        <button class="btn btn--timer" (click)="togglePause()">
+          {{ state === 'PAUSED' ? '▶ Reanudar' : '⏸ Pausar' }}
+        </button>
+      </div>
+
+      <!-- Athletes -->
+      <div class="combat__athletes">
+        <!-- Athlete A -->
+        <div class="athlete-panel">
+          <app-score-board [score]="scoreA" [label]="labelA" />
+          <div class="controls">
+            <button class="btn btn--ippon"    (click)="ippon(0)">Ippon</button>
+            <button class="btn btn--waza"     (click)="wazaAri(0)">Waza-ari</button>
+            <button class="btn btn--yuko"     (click)="yuko(0)">Yuko</button>
+            <button class="btn btn--shido"    (click)="shido(0)">Shido</button>
+            <button class="btn btn--osae"     (click)="toggleOsaekomi(0)">
+              {{ osaekomiActive ? 'Sokomeru' : 'Osae' }} A
+            </button>
+          </div>
+        </div>
+
+        <!-- VS separator -->
+        <div class="vs">VS</div>
+
+        <!-- Athlete B -->
+        <div class="athlete-panel athlete-panel--right">
+          <app-score-board [score]="scoreB" [label]="labelB" />
+          <div class="controls">
+            <button class="btn btn--ippon"    (click)="ippon(1)">Ippon</button>
+            <button class="btn btn--waza"     (click)="wazaAri(1)">Waza-ari</button>
+            <button class="btn btn--yuko"     (click)="yuko(1)">Yuko</button>
+            <button class="btn btn--shido"    (click)="shido(1)">Shido</button>
+            <button class="btn btn--osae"     (click)="toggleOsaekomi(1)">
+              {{ osaekomiActive ? 'Sokomeru' : 'Osae' }} B
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  }
+</div>

@@ -1,0 +1,133 @@
+<div class="tatami">
+  <header class="tatami__header">
+    <h1>Operador de Tatami</h1>
+    @if (isConnected()) {
+      <div class="tatami__badge">
+        Tatami <strong>{{ tatamiId() }}</strong>
+        <button class="btn btn--sm btn--ghost" (click)="disconnect()">Desconectar</button>
+      </div>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="tatami__error">⚠ {{ error() }}</div>
+  }
+
+  <!-- ── Setup: choose tournament + tatami number ────────────────────────── -->
+  @if (!isConnected()) {
+    <section class="tatami__section card-panel">
+      <h2>Conectar al torneo</h2>
+      <form [formGroup]="setupForm" (ngSubmit)="connect()" class="form">
+        <label class="field">
+          ID del torneo
+          <input formControlName="tournamentId" placeholder="UUID del torneo" />
+        </label>
+        <label class="field">
+          Número de tatami
+          <input formControlName="tatamiId" placeholder="1" />
+        </label>
+        <button type="submit" class="btn" [disabled]="setupForm.invalid">
+          Conectar
+        </button>
+      </form>
+    </section>
+  }
+
+  <!-- ── Connected view ─────────────────────────────────────────────────── -->
+  @if (isConnected()) {
+
+    <!-- My active match -->
+    @if (myMatches().length > 0) {
+      <section class="tatami__section">
+        <h2>Mi combate activo</h2>
+        @for (m of myMatches(); track m.id) {
+          <div class="match-card match-card--active">
+            <div class="match-card__fighters">
+              <span class="fighter fighter--a">{{ athleteName(m, 0) }}</span>
+              <span class="vs">VS</span>
+              <span class="fighter fighter--b">{{ athleteName(m, 1) }}</span>
+            </div>
+            <div class="match-card__meta">
+              {{ m.weightClass }} · {{ m.ageGroup }} · {{ m.gender }}
+            </div>
+            <button class="btn btn--sm" (click)="prefillResult(m)">
+              Registrar resultado ↓
+            </button>
+          </div>
+        }
+
+        <form [formGroup]="resultForm" (ngSubmit)="recordResult()" class="form result-form">
+          <input type="hidden" formControlName="matchId" />
+          <input type="hidden" formControlName="categoryId" />
+          <label class="field">
+            Ganador
+            <select formControlName="winnerIdx">
+              <option [value]="0">Atleta A (izquierda)</option>
+              <option [value]="1">Atleta B (derecha)</option>
+            </select>
+          </label>
+          <label class="field">
+            Método
+            <select formControlName="method">
+              @for (m of METHODS; track m) {
+                <option [value]="m">{{ m }}</option>
+              }
+            </select>
+          </label>
+          <button type="submit" class="btn btn--primary"
+                  [disabled]="resultForm.invalid || loading() || !resultForm.value.matchId">
+            Confirmar resultado
+          </button>
+        </form>
+      </section>
+    }
+
+    <!-- Pending matches to claim -->
+    <section class="tatami__section">
+      <h2>Combates pendientes ({{ pendingMatches().length }})</h2>
+
+      @if (pendingMatches().length === 0) {
+        <p class="empty">No hay combates pendientes.</p>
+      }
+
+      <ul class="match-list">
+        @for (m of pendingMatches(); track m.id) {
+          <li class="match-card match-card--pending">
+            <div class="match-card__fighters">
+              <span class="fighter">{{ athleteName(m, 0) }}</span>
+              <span class="vs">vs</span>
+              <span class="fighter">{{ athleteName(m, 1) }}</span>
+            </div>
+            <div class="match-card__meta">
+              {{ m.weightClass }} · {{ m.ageGroup }} · {{ m.gender }}
+            </div>
+            <button class="btn btn--sm"
+                    [disabled]="claimingId() === m.id"
+                    (click)="claim(m)">
+              @if (claimingId() === m.id) { Reclamando… } @else { Reclamar }
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <!-- Finished matches -->
+    @if (finishedMatches().length > 0) {
+      <section class="tatami__section">
+        <h2>Combates finalizados ({{ finishedMatches().length }})</h2>
+        <ul class="match-list">
+          @for (m of finishedMatches(); track m.id) {
+            <li class="match-card match-card--done">
+              <div class="match-card__fighters">
+                <span class="fighter">{{ athleteName(m, 0) }}</span>
+                <span class="vs">vs</span>
+                <span class="fighter">{{ athleteName(m, 1) }}</span>
+              </div>
+              <div class="match-card__meta">{{ m.weightClass }} · tatami {{ m.tatamiId }}</div>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</div>

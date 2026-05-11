@@ -1,0 +1,158 @@
+:host {
+  display: block;
+  height: 100vh;
+  background: #0d0d1a;
+  color: #ecf0f1;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.operator {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.operator__header {
+  background: #16213e;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 2px solid #e74c3c;
+
+  h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #ecf0f1;
+  }
+}
+
+// ── Setup form ───────────────────────────────────────────────────────────────
+
+.operator__setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 1.5rem;
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 320px;
+  background: #16213e;
+  padding: 2rem;
+  border-radius: 12px;
+}
+
+.setup-form__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: #bdc3c7;
+}
+
+.setup-form__input {
+  background: #0d0d1a;
+  border: 1px solid #34495e;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  color: #ecf0f1;
+  font-size: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: #3498db;
+  }
+}
+
+.result-banner {
+  background: #1a6b3c;
+  color: #2ecc71;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+// ── Combat ───────────────────────────────────────────────────────────────────
+
+.operator__combat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.combat__timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  background: #16213e;
+  border-radius: 12px;
+  padding: 0.5rem 1.5rem;
+}
+
+.combat__athletes {
+  display: flex;
+  flex: 1;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.athlete-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #16213e;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.athlete-panel--right {
+  align-items: flex-end;
+}
+
+.vs {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #7f8c8d;
+  padding: 0 0.5rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+// ── Buttons ──────────────────────────────────────────────────────────────────
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: filter 0.15s;
+
+  &:active { filter: brightness(0.8); }
+}
+
+.btn--primary  { background: #2980b9; color: #fff; width: 100%; padding: 0.8rem; font-size: 1rem; }
+.btn--timer    { background: #34495e; color: #ecf0f1; min-width: 120px; }
+.btn--ippon    { background: #c0392b; color: #fff; }
+.btn--waza     { background: #d35400; color: #fff; }
+.btn--yuko     { background: #b7950b; color: #fff; }
+.btn--shido    { background: #6c3483; color: #fff; }
+.btn--osae     { background: #1a5276; color: #fff; }

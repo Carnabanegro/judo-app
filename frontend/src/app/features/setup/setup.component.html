@@ -1,0 +1,231 @@
+<div class="setup">
+  <header class="setup__header">
+    <h1>Configuración del Torneo</h1>
+    <nav class="setup__steps">
+      <button class="step-btn" [class.active]="setup.step() === 'tournament'" (click)="setup.goTo('tournament')">
+        1. Torneo
+      </button>
+      <button class="step-btn" [class.active]="setup.step() === 'divisions'"
+              [disabled]="!setup.canProceedToDivisions()"
+              (click)="setup.goTo('divisions')">
+        2. Divisiones
+      </button>
+      <button class="step-btn" [class.active]="setup.step() === 'athletes'"
+              [disabled]="!setup.canProceedToAthletes()"
+              (click)="setup.goTo('athletes')">
+        3. Atletas
+      </button>
+      <button class="step-btn" [class.active]="setup.step() === 'bracket'"
+              [disabled]="!setup.canProceedToAthletes()"
+              (click)="setup.goTo('bracket')">
+        4. Llaves
+      </button>
+    </nav>
+  </header>
+
+  @if (error()) {
+    <div class="setup__error">⚠ {{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="setup__loading">Cargando…</div>
+  }
+
+  <!-- ── Step 1: Tournament ─────────────────────────────────────────────── -->
+  @if (setup.step() === 'tournament') {
+    <section class="setup__section">
+      <h2>Seleccioná o creá un torneo</h2>
+
+      @if (setup.tournaments().length > 0) {
+        <ul class="card-list">
+          @for (t of setup.tournaments(); track t.id) {
+            <li class="card" [class.selected]="setup.activeTournament()?.id === t.id">
+              <div class="card__body">
+                <strong>{{ t.name }}</strong>
+                <span>{{ t.location }} — {{ t.date }}</span>
+              </div>
+              <button class="btn btn--sm" (click)="selectAndProceed(t)">Seleccionar →</button>
+            </li>
+          }
+        </ul>
+      }
+
+      <details class="form-panel">
+        <summary>+ Nuevo torneo</summary>
+        <form [formGroup]="tournamentForm" (ngSubmit)="createTournament()" class="form">
+          <label class="field">
+            Nombre
+            <input formControlName="name" placeholder="Copa IJF 2026" />
+          </label>
+          <label class="field">
+            Sede
+            <input formControlName="location" placeholder="Buenos Aires" />
+          </label>
+          <label class="field">
+            Fecha
+            <input type="date" formControlName="date" />
+          </label>
+          <button type="submit" class="btn" [disabled]="tournamentForm.invalid || loading()">
+            Crear y continuar
+          </button>
+        </form>
+      </details>
+    </section>
+  }
+
+  <!-- ── Step 2: Divisions ─────────────────────────────────────────────── -->
+  @if (setup.step() === 'divisions') {
+    <section class="setup__section">
+      <h2>Divisiones — {{ setup.activeTournament()?.name }}</h2>
+
+      @if (setup.divisions().length > 0) {
+        <ul class="card-list">
+          @for (d of setup.divisions(); track d.id) {
+            <li class="card" [class.selected]="setup.activeDivision()?.id === d.id">
+              <div class="card__body">
+                <strong>{{ d.weightClass }}</strong>
+                <span>{{ d.ageGroup }} · {{ d.gender }}</span>
+              </div>
+              <button class="btn btn--sm" (click)="selectDivisionAndProceed(d)">Atletas →</button>
+            </li>
+          }
+        </ul>
+      }
+
+      <details class="form-panel" open>
+        <summary>+ Nueva división</summary>
+        <form [formGroup]="divisionForm" (ngSubmit)="createDivision()" class="form">
+          <label class="field">
+            Grupo etario
+            <select formControlName="ageGroup">
+              @for (ag of AGE_GROUPS; track ag) {
+                <option [value]="ag">{{ ag }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            Género
+            <select formControlName="gender">
+              @for (g of GENDERS; track g) {
+                <option [value]="g">{{ g }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            Categoría de peso
+            <input formControlName="weightClass" placeholder="-66kg" />
+          </label>
+          <label class="field">
+            Formato
+            <select formControlName="format">
+              @for (f of FORMATS; track f) {
+                <option [value]="f">{{ f }}</option>
+              }
+            </select>
+          </label>
+          <button type="submit" class="btn" [disabled]="divisionForm.invalid || loading()">
+            Agregar división
+          </button>
+        </form>
+      </details>
+    </section>
+  }
+
+  <!-- ── Step 3: Athletes ───────────────────────────────────────────────── -->
+  @if (setup.step() === 'athletes') {
+    <section class="setup__section">
+      <h2>Atletas — {{ setup.activeDivision()?.weightClass }} {{ setup.activeDivision()?.gender }}</h2>
+
+      @if (setup.athletes().length > 0) {
+        <ul class="card-list">
+          @for (a of setup.athletes(); track a.id) {
+            <li class="card">
+              <div class="card__body">
+                <strong>{{ a.name }}</strong>
+                <span>{{ a.club }} · {{ a.weight }} kg · {{ a.birthDate }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="empty">Sin atletas aún.</p>
+      }
+
+      <details class="form-panel" open>
+        <summary>+ Registrar atleta</summary>
+        <form [formGroup]="athleteForm" (ngSubmit)="registerAthlete()" class="form">
+          <label class="field">
+            Nombre
+            <input formControlName="name" placeholder="Juan Pérez" />
+          </label>
+          <label class="field">
+            Club
+            <input formControlName="club" placeholder="Club Kodokan" />
+          </label>
+          <label class="field">
+            Peso (kg)
+            <input type="number" formControlName="weight" placeholder="65.5" step="0.1" />
+          </label>
+          <label class="field">
+            Fecha de nacimiento
+            <input type="date" formControlName="birthDate" />
+          </label>
+          <button type="submit" class="btn" [disabled]="athleteForm.invalid || loading()">
+            Registrar
+          </button>
+        </form>
+      </details>
+
+      <div class="setup__actions">
+        <button class="btn btn--primary" [disabled]="!setup.canGenerateBracket() || loading()"
+                (click)="generateBracket()">
+          Generar llaves ({{ setup.athletes().length }} atletas)
+        </button>
+      </div>
+    </section>
+  }
+
+  <!-- ── Step 4: Bracket ────────────────────────────────────────────────── -->
+  @if (setup.step() === 'bracket') {
+    <section class="setup__section">
+      <h2>Llaves — {{ setup.activeDivision()?.weightClass }}</h2>
+
+      @if (setup.bracket(); as b) {
+        @for (round of b.rounds; track round.number) {
+          <div class="bracket-round">
+            <h3>Ronda {{ round.number }}</h3>
+            <ul class="match-list">
+              @for (m of round.matches; track m.id) {
+                <li class="match-card" [class]="'status-' + m.status.toLowerCase()">
+                  <span class="match-card__athlete">{{ m.athleteA?.name ?? 'BYE' }}</span>
+                  <span class="match-card__vs">vs</span>
+                  <span class="match-card__athlete">{{ m.athleteB?.name ?? 'BYE' }}</span>
+                  <span class="match-card__status">{{ m.status }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (b.repechage.length > 0) {
+          <div class="bracket-round">
+            <h3>Repechaje</h3>
+            @for (pool of b.repechage; track pool.number) {
+              <ul class="match-list">
+                @for (m of pool.matches; track m.id) {
+                  <li class="match-card">
+                    <span class="match-card__athlete">{{ m.athleteA?.name ?? 'TBD' }}</span>
+                    <span class="match-card__vs">vs</span>
+                    <span class="match-card__athlete">{{ m.athleteB?.name ?? 'TBD' }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      } @else {
+        <p class="empty">Generando llaves…</p>
+      }
+    </section>
+  }
+</div>
