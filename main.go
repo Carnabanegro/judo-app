@@ -2,32 +2,36 @@ package main
 
 import (
 	"embed"
+	"io/fs"
+	"log"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
-//go:embed all:frontend/dist
+//go:embed all:build/frontend
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
-	app := NewApp()
+	// Sub-FS rooted at build/frontend/browser — served by the display HTTP server
+	// so remote operators can open http://<host>:8080 in a browser.
+	browserFS, err := fs.Sub(assets, "build/frontend/browser")
+	if err != nil {
+		log.Fatal("could not create browser sub-fs:", err)
+	}
 
-	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "judo-app",
-		Width:  1024,
-		Height: 768,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+	app := NewApp(browserFS)
+
+	err = wails.Run(&options.App{
+		Title:            "Judo App",
+		Width:            1280,
+		Height:           800,
+		AssetServer:      &assetserver.Options{Assets: assets},
+		BackgroundColour: &options.RGBA{R: 13, G: 13, B: 26, A: 1},
 		OnStartup:        app.startup,
-		Bind: []interface{}{
-			app,
-		},
+		OnShutdown:       app.shutdown,
+		Bind:             []interface{}{app},
 	})
 
 	if err != nil {
