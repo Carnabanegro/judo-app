@@ -15,16 +15,22 @@ export class HomeComponent implements OnDestroy {
 
   readonly active = signal<{id:string,name:string,location:string,date:string} | null>(null);
   readonly loading = signal(false);
-  readonly isWails = !!(window as any).go?.main?.App;
+
+  // Evaluated lazily each call so it works even when window.go is injected async by Wails
+  get isWails(): boolean {
+    return !!(window as any).go?.main?.App;
+  }
 
   private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
-    this.loadActive();
-    // Poll until a tournament is activated — both in browser and Wails
-    this.pollInterval = setInterval(() => {
-      if (!this.active()) this.loadActive();
-    }, 3000);
+    // Give Wails runtime 300ms to inject window.go before first load
+    setTimeout(() => {
+      this.loadActive();
+      this.pollInterval = setInterval(() => {
+        if (!this.active()) this.loadActive();
+      }, 3000);
+    }, 300);
   }
 
   ngOnDestroy() {

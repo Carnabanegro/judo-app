@@ -169,6 +169,7 @@ export class WailsService {
 
   // Obtener torneo activo (Wails binding). Dev stub retorna null.
   getActiveTournament(): Promise<{id:string,name:string,location:string,date:string} | null> {
+    console.log('[DEBUG] getActiveTournament, app=', !!this.app, 'hasBinding=', !!this.app?.GetActiveTournament);
     if (this.app?.GetActiveTournament) {
       return this.app.GetActiveTournament();
     }

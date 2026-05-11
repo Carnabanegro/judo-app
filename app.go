@@ -244,12 +244,14 @@ func (a *App) SetActiveTournament(tournamentID string) error {
         return fmt.Errorf("invalid tournament ID: %w", err)
     }
     a.tournaments.SetActiveTournament(id)
+    fmt.Println("[DEBUG] SetActiveTournament:", id)
     return nil
 }
 
 // GetActiveTournament returns the active tournament, or nil if none is set.
 func (a *App) GetActiveTournament() (*TournamentDTO, error) {
     t, err := a.tournaments.GetActiveTournament(a.ctx)
+    fmt.Printf("[DEBUG] GetActiveTournament: t=%v err=%v\n", t, err)
     if err != nil {
         return nil, err
     }
