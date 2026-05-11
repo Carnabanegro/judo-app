@@ -1,10 +1,10 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Subscription, filter } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TatamiOperatorService } from '../../services/tatami-operator.service';
+import { CombatWsService } from '../../services/combat-ws.service';
 import { MatchRow } from '../../models/setup';
-
-const POLL_INTERVAL_MS = 3000;
 
 @Component({
   selector: 'app-tatami',
@@ -16,6 +16,7 @@ const POLL_INTERVAL_MS = 3000;
 export class TatamiComponent implements OnInit, OnDestroy {
   private svc = inject(TatamiOperatorService);
   private fb = inject(FormBuilder);
+  private ws = inject(CombatWsService);
 
   // ── State ─────────────────────────────────────────────────────────────────
 
@@ -38,10 +39,7 @@ export class TatamiComponent implements OnInit, OnDestroy {
 
   // ── Forms ─────────────────────────────────────────────────────────────────
 
-  readonly setupForm = this.fb.group({
-    tournamentId: ['', Validators.required],
-    tatamiId:     ['', Validators.required],
-  });
+  // Removed full setup form — active tournament used and simple tatami selector only
 
   readonly resultForm = this.fb.group({
     matchId:    ['', Validators.required],
@@ -52,7 +50,7 @@ export class TatamiComponent implements OnInit, OnDestroy {
 
   readonly METHODS = ['IPPON', 'WAZA_ARI_AWASETE_IPPON', 'HANSOKU_MAKE', 'KIKEN_GACHI', 'FUSEN_GACHI', 'GOLDEN_SCORE'];
 
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private wsSub: Subscription | null = null;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -63,35 +61,46 @@ export class TatamiComponent implements OnInit, OnDestroy {
       const cfg = JSON.parse(stored);
       this.tatamiId.set(cfg.tatamiId ?? '');
       this.tournamentId.set(cfg.tournamentId ?? '');
-      if (this.tatamiId() && this.tournamentId()) {
-        this.startPolling();
+      if (this.tatamiId()) {
+        this.connectWs();
       }
     }
+
+    // Try to auto-resolve active tournament (browser mode)
+    (async () => {
+      try {
+        const active = await this.svc.getActiveTournament();
+        if (active) {
+          this.tournamentId.set(active.id);
+          sessionStorage.setItem('tatami-config', JSON.stringify({ tournamentId: active.id, tatamiId: this.tatamiId() }));
+          if (this.tatamiId()) this.connectWs();
+        }
+      } catch (_) {
+        // ignore
+      }
+    })();
   }
 
   ngOnDestroy(): void {
-    this.stopPolling();
+    this.disconnectWs();
   }
 
   // ── Setup ─────────────────────────────────────────────────────────────────
 
+  // Connect with simple tatami number — tournament is auto-selected via active tournament
   async connect(): Promise<void> {
-    if (this.setupForm.invalid) return;
-    const { tournamentId, tatamiId } = this.setupForm.value;
-    this.tournamentId.set(tournamentId!);
-    this.tatamiId.set(tatamiId!);
-    sessionStorage.setItem('tatami-config', JSON.stringify({ tournamentId, tatamiId }));
+    if (!this.tatamiId()) return;
+    sessionStorage.setItem('tatami-config', JSON.stringify({ tournamentId: this.tournamentId(), tatamiId: this.tatamiId() }));
     await this.loadMatches();
-    this.startPolling();
+    this.connectWs();
   }
 
   disconnect(): void {
-    this.stopPolling();
+    this.disconnectWs();
     this.tatamiId.set('');
     this.tournamentId.set('');
     this.matches.set([]);
     sessionStorage.removeItem('tatami-config');
-    this.setupForm.reset();
   }
 
   // ── Matches ───────────────────────────────────────────────────────────────
@@ -141,18 +150,20 @@ export class TatamiComponent implements OnInit, OnDestroy {
     this.resultForm.patchValue({ matchId: m.id, categoryId: m.categoryId });
   }
 
-  // ── Polling ───────────────────────────────────────────────────────────────
+  // ── WebSocket ─────────────────────────────────────────────────────────────
 
-  private startPolling(): void {
-    this.stopPolling();
-    this.pollTimer = setInterval(() => this.loadMatches(), POLL_INTERVAL_MS);
+  private connectWs(): void {
+    this.ws.connect();
+    this.wsSub?.unsubscribe();
+    this.wsSub = this.ws.events$
+      .pipe(filter(e => e.type === 'bracket:update'))
+      .subscribe(() => this.loadMatches());
   }
 
-  private stopPolling(): void {
-    if (this.pollTimer !== null) {
-      clearInterval(this.pollTimer);
-      this.pollTimer = null;
-    }
+  private disconnectWs(): void {
+    this.wsSub?.unsubscribe();
+    this.wsSub = null;
+    this.ws.disconnect();
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

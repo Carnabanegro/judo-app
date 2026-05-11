@@ -24,8 +24,20 @@ export class TatamiOperatorService {
     if (this.isWails) {
       return this.wails.listMatches(tournamentId);
     }
-    const res = await fetch(`/api/matches?tournamentId=${encodeURIComponent(tournamentId)}`);
+    const url = tournamentId ? `/api/matches?tournamentId=${encodeURIComponent(tournamentId)}` : `/api/matches`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`listMatches: ${res.statusText}`);
+    return res.json();
+  }
+
+  async getActiveTournament(): Promise<{id:string,name:string,location:string,date:string} | null> {
+    if (this.isWails) {
+      // Wails shell: no binding yet for active tournament; backend may still expose API
+      return null;
+    }
+    const res = await fetch('/api/active-tournament');
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`getActiveTournament: ${res.statusText}`);
     return res.json();
   }
 

@@ -155,4 +155,13 @@ export class WailsService {
   recordMatchResult(categoryId: string, matchId: string, winnerIdx: number, method: string): Promise<void> {
     return this.app?.RecordMatchResult(categoryId, matchId, winnerIdx, method) ?? Promise.resolve();
   }
+
+  // Activar torneo (Wails binding). Dev stub logs and resolves.
+  activateTournament(id: string): Promise<void> {
+    if (this.app?.SetActiveTournament) {
+      return this.app.SetActiveTournament(id);
+    }
+    console.log('activateTournament (dev):', id);
+    return Promise.resolve();
+  }
 }

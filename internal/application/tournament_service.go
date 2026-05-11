@@ -11,10 +11,11 @@ import (
 
 // TournamentService handles all tournament management use cases.
 type TournamentService struct {
-	tournaments ports.TournamentRepo
-	divisions   ports.DivisionRepo
-	categories  ports.CategoryRepo
-	athletes    ports.AthleteRepo
+    tournaments ports.TournamentRepo
+    divisions   ports.DivisionRepo
+    categories  ports.CategoryRepo
+    athletes    ports.AthleteRepo
+    activeTournamentID *domain.TournamentID
 }
 
 // NewTournamentService creates a new TournamentService.
@@ -108,5 +109,18 @@ func (s *TournamentService) RegisterAthlete(ctx context.Context, categoryID doma
 
 // ListAthletes returns athletes registered in a category.
 func (s *TournamentService) ListAthletes(ctx context.Context, categoryID domain.CategoryID) ([]*domain.Athlete, error) {
-	return s.athletes.ListByCategory(ctx, categoryID)
+    return s.athletes.ListByCategory(ctx, categoryID)
+}
+
+// SetActiveTournament marks a tournament as the current active one.
+func (s *TournamentService) SetActiveTournament(id domain.TournamentID) {
+    s.activeTournamentID = &id
+}
+
+// GetActiveTournament returns the active tournament, or nil if none is set.
+func (s *TournamentService) GetActiveTournament(ctx context.Context) (*domain.Tournament, error) {
+    if s.activeTournamentID == nil {
+        return nil, nil
+    }
+    return s.tournaments.FindByID(ctx, *s.activeTournamentID)
 }

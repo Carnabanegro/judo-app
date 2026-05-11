@@ -62,10 +62,11 @@ func (a *App) startup(ctx context.Context) {
 	a.brackets = application.NewBracketService(bracketRepo, matchRepo, matchStatusRepo, athleteRepo, categoryRepo)
 	a.combat = application.NewCombatService(displayServer)
 	a.practice = application.NewPracticeService(a.combat)
-	a.tatami = application.NewTatamiService(matchStatusRepo, a.brackets, a.combat, displayServer)
+  a.tatami = application.NewTatamiService(matchStatusRepo, a.brackets, a.combat, displayServer)
 
-	displayServer.SetTatamiService(a.tatami)
-	if a.spa != nil {
+  displayServer.SetTatamiService(a.tatami)
+  displayServer.SetTournamentService(a.tournaments)
+  if a.spa != nil {
 		displayServer.SetSPA(a.spa)
 	}
 	displayServer.Start(ctx)
@@ -229,11 +230,21 @@ func (a *App) GetBracket(divisionID string) (*BracketDTO, error) {
 
 // ListMatches returns all matches for a tournament with live status/tatami info.
 func (a *App) ListMatches(tournamentID string) ([]ports.MatchRow, error) {
-	tID, err := uuid.Parse(tournamentID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid tournamentID: %w", err)
-	}
-	return a.tatami.ListMatches(a.ctx, tID)
+    tID, err := uuid.Parse(tournamentID)
+    if err != nil {
+        return nil, fmt.Errorf("invalid tournamentID: %w", err)
+    }
+    return a.tatami.ListMatches(a.ctx, tID)
+}
+
+// SetActiveTournament sets the active tournament used by the display server.
+func (a *App) SetActiveTournament(tournamentID string) error {
+    id, err := uuid.Parse(tournamentID)
+    if err != nil {
+        return fmt.Errorf("invalid tournament ID: %w", err)
+    }
+    a.tournaments.SetActiveTournament(id)
+    return nil
 }
 
 // ClaimMatch atomically claims a PENDING match for a tatami and starts the combat.

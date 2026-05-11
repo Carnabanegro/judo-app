@@ -107,4 +107,10 @@ export class SetupService {
   goTo(step: SetupStep): void {
     this.step.set(step);
   }
+
+  // Set the active tournament by ID (UI helper).
+  setActiveTournament(id: string): void {
+    const t = this.tournaments().find(x => x.id === id) ?? null;
+    this.activeTournament.set(t);
+  }
 }

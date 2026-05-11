@@ -18,11 +18,12 @@ import (
 // and the Angular SPA as static files so remote operators can connect
 // via browser at http://<host>:8080.
 type Server struct {
-	hub     *Hub
-	handler *Handler
-	addr    string
-	tatami  *application.TatamiService // set after construction via SetTatamiService
-	spa     fs.FS                       // embedded Angular build; nil = no SPA
+    hub     *Hub
+    handler *Handler
+    addr    string
+    tatami  *application.TatamiService // set after construction via SetTatamiService
+    tournament *application.TournamentService
+    spa     fs.FS                       // embedded Angular build; nil = no SPA
 }
 
 // NewServer creates a new display Server.
@@ -38,7 +39,13 @@ func NewServer(addr string) *Server {
 // SetTatamiService wires the tatami service so REST handlers can call it.
 // Must be called before Start.
 func (s *Server) SetTatamiService(t *application.TatamiService) {
-	s.tatami = t
+    s.tatami = t
+}
+
+// SetTournamentService wires the tournament service so REST handlers can call it.
+// Must be called before Start when tournament endpoints are needed.
+func (s *Server) SetTournamentService(t *application.TournamentService) {
+    s.tournament = t
 }
 
 // SetSPA sets the embedded filesystem for serving the Angular SPA.
@@ -59,9 +66,10 @@ func (s *Server) Start(ctx context.Context) {
 	// WebSocket endpoint.
 	mux.HandleFunc("/ws", s.handler.ServeWS)
 
-	// REST API for remote browser operators.
-	mux.HandleFunc("/api/matches", s.handleListMatches)
-	mux.HandleFunc("/api/matches/", s.handleMatchAction) // /api/matches/{id}/claim|result
+  // REST API for remote browser operators.
+  mux.HandleFunc("/api/matches", s.handleListMatches)
+  mux.HandleFunc("/api/active-tournament", s.handleActiveTournament)
+  mux.HandleFunc("/api/matches/", s.handleMatchAction) // /api/matches/{id}/claim|result
 
 	// SPA fallback — serves Angular static files; unknown paths → index.html.
 	if s.spa != nil {
@@ -118,12 +126,32 @@ func (s *Server) handleListMatches(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "service not ready", http.StatusServiceUnavailable)
 		return
 	}
-	tIDStr := r.URL.Query().Get("tournamentId")
-	tID, err := uuid.Parse(tIDStr)
-	if err != nil {
-		http.Error(w, "invalid tournamentId", http.StatusBadRequest)
-		return
-	}
+    tIDStr := r.URL.Query().Get("tournamentId")
+    var tID uuid.UUID
+    if tIDStr == "" {
+        // Try active tournament if available
+        if s.tournament == nil {
+            http.Error(w, "tournamentId required", http.StatusBadRequest)
+            return
+        }
+        t, err := s.tournament.GetActiveTournament(r.Context())
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        if t == nil {
+            http.Error(w, "tournamentId required", http.StatusBadRequest)
+            return
+        }
+        tID = t.ID
+    } else {
+        var err error
+        tID, err = uuid.Parse(tIDStr)
+        if err != nil {
+            http.Error(w, "invalid tournamentId", http.StatusBadRequest)
+            return
+        }
+    }
 	rows, err := s.tatami.ListMatches(r.Context(), tID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -131,6 +159,37 @@ func (s *Server) handleListMatches(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(rows)
+}
+
+// GET /api/active-tournament
+func (s *Server) handleActiveTournament(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+        return
+    }
+    if s.tournament == nil {
+        http.Error(w, "service not ready", http.StatusServiceUnavailable)
+        return
+    }
+    t, err := s.tournament.GetActiveTournament(r.Context())
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    if t == nil {
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusNotFound)
+        _ = json.NewEncoder(w).Encode(map[string]string{"error": "no active tournament"})
+        return
+    }
+    out := map[string]string{
+        "id": t.ID.String(),
+        "name": t.Name,
+        "location": t.Location,
+        "date": t.Date.Format("2006-01-02"),
+    }
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(out)
 }
 
 // POST /api/matches/{id}/claim   body: {"tatamiId":"1","labelA":"Uke","labelB":"Tori"}
