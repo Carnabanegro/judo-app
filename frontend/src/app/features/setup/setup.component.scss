@@ -11,6 +11,19 @@
   margin: 0 auto;
   padding: 1.5rem;
 
+  &__back {
+    background: none;
+    border: none;
+    color: #3a86ff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+
+    &:hover { text-decoration: underline; }
+  }
+
   &__header {
     margin-bottom: 1.5rem;
 

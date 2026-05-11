@@ -1,5 +1,6 @@
 <div class="setup">
   <header class="setup__header">
+    <button class="setup__back" (click)="goHome()">← Inicio</button>
     <h1>Configuración del Torneo</h1>
     <nav class="setup__steps">
       <button class="step-btn" [class.active]="setup.step() === 'tournament'" (click)="setup.goTo('tournament')">
@@ -46,7 +47,9 @@
             </div>
               <button class="btn btn--sm" (click)="selectAndProceed(t)">Seleccionar →</button>
               <button class="btn btn--ghost btn--sm" (click)="activateTournament(t)">Activar</button>
-              <span *ngIf="setup.activeTournament()?.id === t.id" class="badge">✓ Activo</span>
+              @if (setup.activeTournament()?.id === t.id) {
+                <span class="badge">✓ Activo</span>
+              }
             </li>
           }
         </ul>

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { SetupService } from '../../services/setup.service';
 import { TournamentDTO, DivisionDTO } from '../../models/setup';
 import { WailsService } from '../../services/wails.service';
@@ -16,6 +17,7 @@ export class SetupComponent implements OnInit {
   readonly setup = inject(SetupService);
   private wails = inject(WailsService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -134,5 +136,9 @@ export class SetupComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  goHome() {
+    this.router.navigate(['/']);
   }
 }
