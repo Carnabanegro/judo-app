@@ -1,10 +1,11 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Subscription, filter } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TatamiOperatorService } from '../../services/tatami-operator.service';
 import { MatchRow } from '../../models/setup';
+import { CombatWsService } from '../../services/combat-ws.service';
 
-const POLL_INTERVAL_MS = 3000;
 
 @Component({
   selector: 'app-tatami',
@@ -16,6 +17,7 @@ const POLL_INTERVAL_MS = 3000;
 export class TatamiComponent implements OnInit, OnDestroy {
   private svc = inject(TatamiOperatorService);
   private fb = inject(FormBuilder);
+  private ws = inject(CombatWsService);
 
   // ── State ─────────────────────────────────────────────────────────────────
 
@@ -52,7 +54,7 @@ export class TatamiComponent implements OnInit, OnDestroy {
 
   readonly METHODS = ['IPPON', 'WAZA_ARI_AWASETE_IPPON', 'HANSOKU_MAKE', 'KIKEN_GACHI', 'FUSEN_GACHI', 'GOLDEN_SCORE'];
 
-  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private wsSub: Subscription | null = null;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -64,13 +66,20 @@ export class TatamiComponent implements OnInit, OnDestroy {
       this.tatamiId.set(cfg.tatamiId ?? '');
       this.tournamentId.set(cfg.tournamentId ?? '');
       if (this.tatamiId() && this.tournamentId()) {
-        this.startPolling();
+        this.ws.connect();
+        this.wsSub?.unsubscribe();
+        this.wsSub = this.ws.events$.pipe(filter(e => e.type === 'bracket:update')).subscribe(() => this.loadMatches());
       }
+
     }
   }
 
   ngOnDestroy(): void {
-    this.stopPolling();
+    if (this.wsSub) {
+      this.wsSub.unsubscribe();
+      this.wsSub = null;
+    }
+    this.ws.disconnect();
   }
 
   // ── Setup ─────────────────────────────────────────────────────────────────
@@ -82,11 +91,17 @@ export class TatamiComponent implements OnInit, OnDestroy {
     this.tatamiId.set(tatamiId!);
     sessionStorage.setItem('tatami-config', JSON.stringify({ tournamentId, tatamiId }));
     await this.loadMatches();
-    this.startPolling();
+    this.ws.connect();
+    this.wsSub?.unsubscribe();
+    this.wsSub = this.ws.events$.pipe(filter(e => e.type === 'bracket:update')).subscribe(() => this.loadMatches());
   }
 
   disconnect(): void {
-    this.stopPolling();
+    if (this.wsSub) {
+      this.wsSub.unsubscribe();
+      this.wsSub = null;
+    }
+    this.ws.disconnect();
     this.tatamiId.set('');
     this.tournamentId.set('');
     this.matches.set([]);
@@ -141,19 +156,8 @@ export class TatamiComponent implements OnInit, OnDestroy {
     this.resultForm.patchValue({ matchId: m.id, categoryId: m.categoryId });
   }
 
-  // ── Polling ───────────────────────────────────────────────────────────────
-
-  private startPolling(): void {
-    this.stopPolling();
-    this.pollTimer = setInterval(() => this.loadMatches(), POLL_INTERVAL_MS);
-  }
-
-  private stopPolling(): void {
-    if (this.pollTimer !== null) {
-      clearInterval(this.pollTimer);
-      this.pollTimer = null;
-    }
-  }
+  // ── WebSocket updates ─────────────────────────────────────────────────────
+  // Uses CombatWsService to receive `bracket:update` events and refresh matches.
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
