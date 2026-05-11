@@ -40,6 +40,7 @@ declare global {
           ClaimMatch(matchId: string, tatamiId: string, labelA: string, labelB: string): Promise<void>;
           RecordMatchResult(categoryId: string, matchId: string, winnerIdx: number, method: string): Promise<void>;
           SetActiveTournament(id: string): Promise<void>;
+          GetActiveTournament(): Promise<{id:string,name:string,location:string,date:string} | null>;
         };
       };
     };
@@ -164,5 +165,13 @@ export class WailsService {
     }
     console.log('activateTournament (dev):', id);
     return Promise.resolve();
+  }
+
+  // Obtener torneo activo (Wails binding). Dev stub retorna null.
+  getActiveTournament(): Promise<{id:string,name:string,location:string,date:string} | null> {
+    if (this.app?.GetActiveTournament) {
+      return this.app.GetActiveTournament();
+    }
+    return Promise.resolve(null);
   }
 }

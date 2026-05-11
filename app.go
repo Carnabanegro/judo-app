@@ -247,6 +247,18 @@ func (a *App) SetActiveTournament(tournamentID string) error {
     return nil
 }
 
+// GetActiveTournament returns the active tournament, or nil if none is set.
+func (a *App) GetActiveTournament() (*TournamentDTO, error) {
+    t, err := a.tournaments.GetActiveTournament(a.ctx)
+    if err != nil {
+        return nil, err
+    }
+    if t == nil {
+        return nil, nil
+    }
+    return tournamentToDTO(t), nil
+}
+
 // ClaimMatch atomically claims a PENDING match for a tatami and starts the combat.
 func (a *App) ClaimMatch(matchID, tatamiID, labelA, labelB string) error {
 	mID, err := uuid.Parse(matchID)
