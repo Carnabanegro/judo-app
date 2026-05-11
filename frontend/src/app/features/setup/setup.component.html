@@ -39,12 +39,14 @@
       @if (setup.tournaments().length > 0) {
         <ul class="card-list">
           @for (t of setup.tournaments(); track t.id) {
-            <li class="card" [class.selected]="setup.activeTournament()?.id === t.id">
-              <div class="card__body">
-                <strong>{{ t.name }}</strong>
-                <span>{{ t.location }} — {{ t.date }}</span>
-              </div>
+          <li class="card" [class.selected]="setup.activeTournament()?.id === t.id">
+            <div class="card__body">
+              <strong>{{ t.name }}</strong>
+              <span>{{ t.location }} — {{ t.date }}</span>
+            </div>
               <button class="btn btn--sm" (click)="selectAndProceed(t)">Seleccionar →</button>
+              <button class="btn btn--ghost btn--sm" (click)="activateTournament(t)">Activar</button>
+              <span *ngIf="setup.activeTournament()?.id === t.id" class="badge">✓ Activo</span>
             </li>
           }
         </ul>

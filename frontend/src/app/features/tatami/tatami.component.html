@@ -17,19 +17,16 @@
   @if (!isConnected()) {
     <section class="tatami__section card-panel">
       <h2>Conectar al torneo</h2>
-      <form [formGroup]="setupForm" (ngSubmit)="connect()" class="form">
-        <label class="field">
-          ID del torneo
-          <input formControlName="tournamentId" placeholder="UUID del torneo" />
-        </label>
+      <div class="form">
         <label class="field">
           Número de tatami
-          <input formControlName="tatamiId" placeholder="1" />
+          <input [value]="tatamiId()" (input)="tatamiId.set($any($event.target).value)" placeholder="1" />
         </label>
-        <button type="submit" class="btn" [disabled]="setupForm.invalid">
-          Conectar
-        </button>
-      </form>
+        <button class="btn" (click)="connect()" [disabled]="!tatamiId()">Conectar</button>
+      </div>
+      @if (!tournamentId()) {
+        <p class="empty">Sin torneo activo</p>
+      }
     </section>
   }
 

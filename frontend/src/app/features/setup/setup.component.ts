@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { SetupService } from '../../services/setup.service';
 import { TournamentDTO, DivisionDTO } from '../../models/setup';
+import { WailsService } from '../../services/wails.service';
 
 @Component({
   selector: 'app-setup',
@@ -13,6 +14,7 @@ import { TournamentDTO, DivisionDTO } from '../../models/setup';
 })
 export class SetupComponent implements OnInit {
   readonly setup = inject(SetupService);
+  private wails = inject(WailsService);
   private fb = inject(FormBuilder);
 
   readonly loading = signal(false);
@@ -47,7 +49,29 @@ export class SetupComponent implements OnInit {
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
   async ngOnInit(): Promise<void> {
-    await this.run(() => this.setup.loadTournaments());
+    await this.run(async () => {
+      await this.setup.loadTournaments();
+      // Load active tournament to display indicator
+      try {
+        const res = await fetch('/api/active-tournament');
+        if (res.ok) {
+          const active = await res.json();
+          this.setup.setActiveTournament && this.setup.setActiveTournament(active.id);
+        }
+      } catch {
+        // ignore
+      }
+    });
+  }
+
+  async activateTournament(t: TournamentDTO): Promise<void> {
+    try {
+      await this.wails.activateTournament(t.id);
+      // reflect in UI
+      this.setup.setActiveTournament(t.id);
+    } catch (e) {
+      // ignore for now
+    }
   }
 
   // ── Step 1: Tournament ────────────────────────────────────────────────────

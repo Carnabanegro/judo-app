@@ -1,0 +1,46 @@
+<div class="home" [class.wails]="isWails">
+  <header class="home__header">
+    <h1>Judo App</h1>
+    @if (active()) {
+      <div class="home__tournament">{{ active()!.name }}</div>
+    }
+  </header>
+
+  <main class="home__main">
+    @if (loading()) {
+      <p class="home__loading">Cargando…</p>
+    } @else if (isWails) {
+      <!-- Wails mode: nav to all sections -->
+      <nav class="home__nav">
+        <button class="home__nav-btn" (click)="go('/setup')">
+          <span class="home__nav-icon">⚙️</span>
+          <span>Configurar torneo</span>
+        </button>
+        <button class="home__nav-btn" (click)="go('/tatami')">
+          <span class="home__nav-icon">🥋</span>
+          <span>Operar tatami</span>
+        </button>
+      </nav>
+    } @else if (active()) {
+      <!-- Browser mode: active tournament — show role selector -->
+      <p class="home__subtitle">{{ active()!.name }}</p>
+      <div class="home__cards">
+        <button class="home__card" (click)="go('/tatami')">
+          <span class="home__card-icon">🥋</span>
+          <span class="home__card-label">Soy operador de tatami</span>
+        </button>
+        <button class="home__card" (click)="go('/display')">
+          <span class="home__card-icon">📺</span>
+          <span class="home__card-label">Pantalla de marcador</span>
+        </button>
+      </div>
+    } @else {
+      <!-- Browser mode: no active tournament -->
+      <div class="home__waiting">
+        <span class="home__waiting-icon">⏳</span>
+        <p>El torneo aún no fue activado.</p>
+        <p class="home__waiting-sub">Esperá al organizador.</p>
+      </div>
+    }
+  </main>
+</div>
