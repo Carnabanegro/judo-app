@@ -37,6 +37,6 @@ export type CombatState =
   | 'FINISHED';
 
 export interface DisplayEvent<T = unknown> {
-  type: 'combat:update' | 'combat:tick' | 'combat:finished';
+  type: 'combat:update' | 'combat:tick' | 'combat:finished' | 'bracket:update';
   payload: T;
 }
