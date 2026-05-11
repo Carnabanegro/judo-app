@@ -27,7 +27,7 @@ func main() {
 		Title:            "Judo App",
 		Width:            1280,
 		Height:           800,
-		AssetServer:      &assetserver.Options{Assets: assets},
+		AssetServer:      &assetserver.Options{Assets: browserFS},
 		BackgroundColour: &options.RGBA{R: 13, G: 13, B: 26, A: 1},
 		OnStartup:        app.startup,
 		OnShutdown:       app.shutdown,
